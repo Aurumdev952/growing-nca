@@ -1,0 +1,6 @@
+train/.venv/
+__pycache__/
+viewer/target/
+models/*.pt
+models/runs/
+eval/runs/
