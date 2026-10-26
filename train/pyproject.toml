@@ -2,7 +2,12 @@
 name = "nca-train"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["torch>=2.7", "numpy", "pillow"]
+dependencies = [
+    "torch>=2.7",
+    "numpy",
+    "pillow",
+    "matplotlib>=3.11.2",
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
@@ -11,3 +16,8 @@ explicit = true
 
 [tool.uv.sources]
 torch = { index = "pytorch-cu128" }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

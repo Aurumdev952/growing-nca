@@ -33,6 +33,7 @@ def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: i
     device = torch.device("cuda")
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
     cfg = EXPERIMENTS[experiment]
     emoji = EMOJIS[emoji_name]
 
@@ -75,10 +76,12 @@ def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: i
         if cfg["use_pool"]:
             pool[idx] = x.detach()
 
-        history.append(loss.item())
+        history.append(loss.detach())
         if it % log_every == 0 or it == steps - 1:
             print(f"[{emoji_name}/{experiment}] step {it:5d} loss {loss.item():.6f} "
                   f"log10 {torch.log10(loss).item():.3f} {time.time() - t0:.0f}s", flush=True)
+
+    history = torch.stack(history).tolist()
 
     stats = dict(steps=steps, batch=batch, pool_size=pool_size, lr=lr, seed=seed,
                  final_loss=sum(history[-100:]) / min(100, len(history)),
@@ -101,7 +104,7 @@ def main():
     p.add_argument("--pool", type=int, default=1024)
     p.add_argument("--lr", type=float, default=2e-3)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--compile", action="store_true")
+    p.add_argument("--no-compile", dest="compile", action="store_false")
     p.add_argument("--out", type=Path, default=ROOT / "models")
     p.add_argument("--log-every", type=int, default=200)
     a = p.parse_args()
