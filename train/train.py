@@ -27,8 +27,9 @@ def per_sample_loss(x: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     return ((x[:, :4] - target) ** 2).mean(dim=(1, 2, 3))
 
 
-def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: int,
-          lr: float, seed: int, compile_step: bool, out: Path, log_every: int) -> dict:
+def train(a: argparse.Namespace) -> dict:
+    emoji_name, experiment, steps, batch, pool_size = a.emoji, a.experiment, a.steps, a.batch, a.pool
+    lr, seed, out, log_every = a.lr, a.seed, a.out, a.log_every
     torch.manual_seed(seed)
     device = torch.device("cuda")
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -43,7 +44,7 @@ def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: i
     ca = CA().to(device)
     opt = torch.optim.Adam(ca.parameters(), lr=lr)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, milestones=[2000], gamma=0.1)
-    step_fn = torch.compile(ca) if compile_step else ca
+    step_fn = torch.compile(ca) if a.compile else ca
     pool = seed_state.repeat(pool_size, 1, 1, 1)
 
     history = []
@@ -65,9 +66,10 @@ def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: i
         for _ in range(int(torch.randint(64, 97, ()).item())):
             x = step_fn(x)
         loss = per_sample_loss(x, target).mean()
+        objective = loss + a.overflow * (x - x.clamp(-1.0, 1.0)).abs().mean() if a.overflow else loss
 
         opt.zero_grad(set_to_none=True)
-        loss.backward()
+        objective.backward()
         with torch.no_grad():
             for p in ca.parameters():
                 p.grad /= p.grad.norm() + 1e-8
@@ -83,14 +85,15 @@ def train(emoji_name: str, experiment: str, steps: int, batch: int, pool_size: i
 
     history = torch.stack(history).tolist()
 
-    stats = dict(steps=steps, batch=batch, pool_size=pool_size, lr=lr, seed=seed,
+    stats = dict(steps=steps, batch=batch, pool_size=pool_size, lr=lr, seed=seed, overflow=a.overflow,
                  final_loss=sum(history[-100:]) / min(100, len(history)),
                  seconds=round(time.time() - t0, 1))
     name = f"{emoji_name}_{experiment}"
     meta = dict(name=name, emoji=emoji, emoji_name=emoji_name, experiment=experiment, train=stats)
     export_json(ca, out / f"{name}.json", meta)
     torch.save(ca.state_dict(), out / f"{name}.pt")
-    (out / f"{name}.loss.json").write_text(json.dumps(history))
+    (out / "runs").mkdir(exist_ok=True)
+    (out / "runs" / f"{name}.loss.json").write_text(json.dumps(history))
     print(f"[{name}] done: {stats}", flush=True)
     return stats
 
@@ -104,11 +107,11 @@ def main():
     p.add_argument("--pool", type=int, default=1024)
     p.add_argument("--lr", type=float, default=2e-3)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--overflow", type=float, default=0.0, help="weight of the penalty on states outside [-1, 1]")
     p.add_argument("--no-compile", dest="compile", action="store_false")
     p.add_argument("--out", type=Path, default=ROOT / "models")
     p.add_argument("--log-every", type=int, default=200)
-    a = p.parse_args()
-    train(a.emoji, a.experiment, a.steps, a.batch, a.pool, a.lr, a.seed, a.compile, a.out, a.log_every)
+    train(p.parse_args())
 
 
 if __name__ == "__main__":

@@ -44,7 +44,7 @@ def damage_masks(h: int, w: int, device) -> dict[str, torch.Tensor]:
 def rotate(img: torch.Tensor, angle: float) -> torch.Tensor:
     """Rotate (N, C, H, W) counter-clockwise on screen by `angle` radians."""
     c, s = math.cos(angle), math.sin(angle)
-    theta = torch.tensor([[c, s, 0.0], [-s, c, 0.0]], device=img.device)[None].expand(img.shape[0], 2, 3)
+    theta = torch.tensor([[c, -s, 0.0], [s, c, 0.0]], device=img.device)[None].expand(img.shape[0], 2, 3)
     grid = F.affine_grid(theta, img.shape, align_corners=False)
     return F.grid_sample(img, grid, align_corners=False)
 
@@ -66,7 +66,8 @@ def evaluate(path: Path, n: int, out: Path, device) -> dict:
     target = load_target(doc["emoji"]).to(device)[None]
     h, w = target.shape[-2:]
     torch.manual_seed(1234)
-    res = {"name": doc["name"], "experiment": doc["experiment"]}
+    label = doc["name"] if path.resolve().parent == ROOT / "models" else path.resolve().parent.name
+    res = {"name": label, "experiment": doc["experiment"]}
     strip = []
 
     x = make_seed(n, h, w, device)
@@ -99,11 +100,11 @@ def evaluate(path: Path, n: int, out: Path, device) -> dict:
     for _ in range(REGEN_FROM):
         x = ca(x, angle=ANGLE)
     res["loss_rot45"] = loss(x, rotate(target, ANGLE))
-    res["loss_rot45_wrong_sign"] = loss(x, rotate(target, -ANGLE))
+    res["loss_rot45_opposite"] = loss(x, rotate(target, -ANGLE))
     strip.append(frame(x))
 
     out.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(np.concatenate(strip, 1)).save(out / f"{doc['name']}.png")
+    Image.fromarray(np.concatenate(strip, 1)).save(out / f"{label}.png")
     return res
 
 

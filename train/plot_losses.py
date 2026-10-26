@@ -21,7 +21,7 @@ def smooth(v: np.ndarray, k: int = 50) -> np.ndarray:
 def main():
     fig, axes = plt.subplots(1, len(EXPERIMENTS), figsize=(15, 4), sharey=True)
     for ax, exp in zip(axes, EXPERIMENTS):
-        for f in sorted((ROOT / "models").glob(f"*_{exp}.loss.json")):
+        for f in sorted((ROOT / "models" / "runs").glob(f"*_{exp}.loss.json")):
             loss = np.array(json.loads(f.read_text()))
             ax.plot(smooth(np.log10(loss)), label=f.name.split("_")[0], lw=1)
         ax.set_title(exp)

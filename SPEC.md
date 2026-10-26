@@ -35,6 +35,7 @@ Inputs: state `s`, rotation angle `θ` (radians, 0 when not rotating), and a per
 2. **Perception.** Zero padding outside the grid. With `K = [[-1,0,1],[-2,0,2],[-1,0,1]] / 8` and `Kᵀ` its transpose,
    `kx = cosθ·K − sinθ·Kᵀ`, `ky = sinθ·K + cosθ·Kᵀ`.
    For each channel `c`, `gx_c(y,x) = Σ_{i,j∈{0,1,2}} kx[i][j] · s[y+i−1][x+j−1][c]` (cross-correlation, row `i` is the y offset), same for `gy` with `ky`.
+   A positive `θ` rotates the grown pattern counter-clockwise on screen (y grows downward).
    Perception vector `p` (48): `p[0..16] = s[y][x][0..16]`, `p[16..32] = gx`, `p[32..48] = gy`.
 3. **MLP.** `h = relu(w1 · p + b1)` (128), `ds = w2 · h` (16).
 4. **Stochastic update.** `s' = s + ds · m[y][x]`.
