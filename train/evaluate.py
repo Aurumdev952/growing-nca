@@ -60,12 +60,12 @@ def frame(x: torch.Tensor, scale: int = 3) -> np.ndarray:
 
 
 @torch.no_grad()
-def evaluate(path: Path, n: int, out: Path, device) -> dict:
+def evaluate(path: Path, n: int, out: Path, device, seed: int = 1234) -> dict:
     ca, doc = load_json(path)
     ca = ca.to(device)
     target = load_target(doc["emoji"]).to(device)[None]
     h, w = target.shape[-2:]
-    torch.manual_seed(1234)
+    torch.manual_seed(seed)
     label = doc["name"] if path.resolve().parent == ROOT / "models" else path.resolve().parent.name
     res = {"name": label, "experiment": doc["experiment"]}
     strip = []
@@ -113,10 +113,11 @@ def main():
     p.add_argument("models", nargs="*", type=Path)
     p.add_argument("--n", type=int, default=16)
     p.add_argument("--out", type=Path, default=ROOT / "eval")
+    p.add_argument("--seed", type=int, default=1234, help="rollout RNG seed; vary it to re-check a selection")
     a = p.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     paths = a.models or sorted((ROOT / "models").glob("*.json"))
-    results = [evaluate(pth, a.n, a.out, device) for pth in paths]
+    results = [evaluate(pth, a.n, a.out, device, a.seed) for pth in paths]
     (a.out / "results.json").write_text(json.dumps(results, indent=1))
     cols = ["loss_grow96", "loss_300", "loss_2000", "alive_2000", "loss_damaged_mean", "loss_regen_mean", "loss_rot45"]
     print("| model | " + " | ".join(cols) + " |")
