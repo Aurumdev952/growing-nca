@@ -249,21 +249,35 @@ impl App {
         if self.catalog.entries.is_empty() {
             ui.label("No models yet. Rescan once training writes one.");
         }
+        let (cur_emoji, cur_exp) = self.model().map(|m| (m.emoji_name.clone(), m.experiment)).unzip();
         let mut clicked = None;
-        let mut group = None;
-        for (i, entry) in self.catalog.entries.iter_mut().enumerate() {
-            if group.as_ref() != Some(&entry.model.emoji_name) {
-                group = Some(entry.model.emoji_name.clone());
+        ui.horizontal_wrapped(|ui| {
+            let mut prev: Option<&str> = None;
+            for (i, entry) in self.catalog.entries.iter_mut().enumerate() {
+                if prev == Some(entry.model.emoji_name.as_str()) {
+                    continue;
+                }
                 let icon = entry.thumb(ui.ctx());
-                ui.horizontal(|ui| {
-                    ui.image((icon, vec2(20.0, 20.0)));
-                    ui.label(RichText::new(&entry.model.emoji_name).strong());
-                });
-            }
-            let m = &entry.model;
-            ui.indent(i, |ui| {
-                if ui.selectable_label(self.selected == Some(i), m.experiment.label()).clicked() {
+                let on = cur_emoji.as_ref() == Some(&entry.model.emoji_name);
+                let button = egui::Button::image((icon, vec2(28.0, 28.0))).selected(on);
+                if ui.add(button).on_hover_text(&entry.model.emoji_name).clicked() {
                     clicked = Some(i);
+                }
+                prev = Some(entry.model.emoji_name.as_str());
+            }
+        });
+        // Switching emoji keeps the current regime when the new emoji has a model for it.
+        if let Some(first) = clicked {
+            let name = &self.catalog.entries[first].model.emoji_name;
+            clicked = self.catalog.entries.iter().position(|e| &e.model.emoji_name == name && Some(e.model.experiment) == cur_exp);
+            clicked = clicked.or(Some(first));
+        }
+        if let Some(emoji) = &cur_emoji {
+            ui.horizontal(|ui| {
+                for (i, e) in self.catalog.entries.iter().enumerate().filter(|(_, e)| &e.model.emoji_name == emoji) {
+                    if ui.selectable_label(self.selected == Some(i), e.model.experiment.label()).clicked() {
+                        clicked = Some(i);
+                    }
                 }
             });
         }
