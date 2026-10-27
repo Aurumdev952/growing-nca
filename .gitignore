@@ -2,5 +2,6 @@ train/.venv/
 __pycache__/
 viewer/target/
 models/*.pt
+models/*.log
 models/runs/
-eval/runs/
+models/hillclimb/
