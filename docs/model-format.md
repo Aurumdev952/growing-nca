@@ -1,4 +1,4 @@
-# NCA model contract
+# Model format
 
 The PyTorch trainer (`train/nca.py`) and the Rust viewer (`viewer/`) implement the same update rule. This file is the contract between them. `fixtures/step_fixture.json` pins it numerically.
 

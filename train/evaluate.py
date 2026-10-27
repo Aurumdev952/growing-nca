@@ -4,6 +4,8 @@ Every number is the mean pixel MSE of premultiplied RGBA against the target over
 of independent stochastic runs, so lower is better and values are comparable across models.
 """
 
+import utils.transport
+import utils.session
 import argparse
 import json
 import math
