@@ -1,6 +1,6 @@
 """Growing Neural Cellular Automata (Mordvintsev et al., Distill 2020).
 
-The update rule must stay bit-for-bit compatible with SPEC.md, because the Rust
+The update rule must stay bit-for-bit compatible with docs/model-format.md, because the Rust
 viewer re-implements it from the exported JSON.
 """
 
