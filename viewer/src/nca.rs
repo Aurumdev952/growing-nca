@@ -159,7 +159,7 @@ fn mlp(model: &Model, p: &[f32; PERCEPTION]) -> [f32; C] {
     ds
 }
 
-/// One update per SPEC.md. `fire` holds one entry per cell.
+/// One update per docs/model-format.md. `fire` holds one entry per cell.
 ///
 /// The MLP runs only for firing cells within two cells of an alive cell. Every other cell
 /// ends up masked to zero, and its updated alpha cannot reach a pre-alive cell's post-alive test.
@@ -282,7 +282,7 @@ mod tests {
         out
     }
 
-    /// SPEC.md transcribed literally, with no skipping, to check `step` against.
+    /// docs/model-format.md transcribed literally, with no skipping, to check `step` against.
     fn reference_step(model: &Model, s: &Grid, angle: f32, fire: &[bool]) -> Grid {
         let (h, w, thr) = (s.h, s.w, model.alive_threshold);
         let alive_of = |g: &Grid| -> Vec<bool> {

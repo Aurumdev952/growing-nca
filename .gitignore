@@ -5,3 +5,5 @@ models/*.pt
 models/*.log
 models/runs/
 models/hillclimb/
+config.bat
+node_modules
