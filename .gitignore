@@ -5,3 +5,4 @@ models/*.pt
 models/*.log
 models/runs/
 models/hillclimb/
+.env
